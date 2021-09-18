@@ -1,7 +1,15 @@
 server:
   port: 3030
 
-spring:  datasource:    username: 
-    password: 
-    url: 
-    driver-class-name:   
+spring:  datasource:    username: root
+    password: root
+    url: jdbc:mysql://localhost:3306/um?useSSL=false
+    driver-class-name: com.mysql.jdbc.Driver
+app:
+  messages:
+    accLocked: Your account is Locked. Un-Lock your account first.
+    loginSuccess: Login Successfull.
+    invalidCredential: Credentials are invalid. Use valid credentials.
+    success: Success...You got password in your email.
+    fail: Wrong email!! Please check once again.
+      

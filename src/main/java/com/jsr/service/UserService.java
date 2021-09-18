@@ -19,7 +19,6 @@ public interface UserService {
 	public boolean saveUser(UserRegForm userRegForm);
 	
 	//For Un-Lock Account functionality
-	public boolean checkTempPwdValid(String email, String tempPwd);
 	public boolean unlockAccount(UnlockAccountForm unlockAccountForm);
 	
 	//For Forgot Password Functionality

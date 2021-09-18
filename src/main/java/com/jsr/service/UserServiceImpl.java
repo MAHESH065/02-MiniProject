@@ -12,10 +12,12 @@ import org.springframework.stereotype.Service;
 import com.jsr.binding.LoginForm;
 import com.jsr.binding.UnlockAccountForm;
 import com.jsr.binding.UserRegForm;
+import com.jsr.constant.AppConstant;
 import com.jsr.entity.City;
 import com.jsr.entity.Country;
 import com.jsr.entity.State;
 import com.jsr.entity.User;
+import com.jsr.props.AppProps;
 import com.jsr.repo.CityRepository;
 import com.jsr.repo.CountryRepository;
 import com.jsr.repo.StateRepository;
@@ -36,21 +38,25 @@ public class UserServiceImpl implements UserService {
 	@Autowired
 	private CityRepository cityRepo;
 	
+	@Autowired
+	private AppProps props;
+	
 	@Override
 	public String LoginUser(LoginForm loginForm) {
+		Map<String, String> messages = props.getMessages();
 		
 		User userEntity = userRepo.findByEmailAndPassword(loginForm.getEmail(), loginForm.getPassword());
 		if(userEntity != null) {
 			String accountStatus = userEntity.getAccountStatus();
 			
-			if(accountStatus.equals("LOCKED")) {
-				return "Your account is Locked. Un-Lock your account first.";
+			if(accountStatus.equals(AppConstant.LOCKED_ACCOUNT)) {
+				return messages.get(AppConstant.Acc_Locked);
 			}else {
-				return "Login Successfull.";
+				return messages.get(AppConstant.LOGIN_SUCCESS);
 			}
 			
 		}else {
-			return "Credentials are invalid. Use valid credentials.";
+			return messages.get(AppConstant.INVALID_CREDENTIAL);
 		}
 	}
 
@@ -105,7 +111,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public boolean saveUser(UserRegForm userRegForm) {
 		userRegForm.setPassword(generateTempPwd());
-		userRegForm.setAccountStatus("LOCKED");
+		userRegForm.setAccountStatus(AppConstant.LOCKED_ACCOUNT);
 		
 		User userEntityObj = new User();
 		BeanUtils.copyProperties(userRegForm, userEntityObj);
@@ -124,7 +130,7 @@ public class UserServiceImpl implements UserService {
 		User userEntity = userRepo.findByEmailAndPassword(unlockAccountForm.getEmail(), unlockAccountForm.getTempPassword());
 		
 		if(userEntity != null) {
-			userEntity.setAccountStatus("UN-LOCK");
+			userEntity.setAccountStatus(AppConstant.UNLOCK_ACCOUNT);
 			userEntity.setPassword(unlockAccountForm.getNewPassword());
 			userRepo.save(userEntity);
 			return true;
@@ -134,13 +140,15 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public String forgotPassword(String email) {
+		Map<String, String> messages = props.getMessages();
+		
 		User userObj = userRepo.findByEmail(email);
 		
 		if(userObj != null) {
 			// TODO for sending email to user
-			return "Success...You got password in your email."; 
+			return messages.get(AppConstant.SUCCESS);
 		}
-		return "Wrong email!! Please check once again";
+		return messages.get(AppConstant.FAIL);
 	}
 	
 	private String generateTempPwd() {
