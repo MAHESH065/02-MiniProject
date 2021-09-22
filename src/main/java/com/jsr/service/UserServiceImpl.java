@@ -1,8 +1,14 @@
 package com.jsr.service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.BeanUtils;
@@ -22,6 +28,7 @@ import com.jsr.repo.CityRepository;
 import com.jsr.repo.CountryRepository;
 import com.jsr.repo.StateRepository;
 import com.jsr.repo.UserRepository;
+import com.jsr.utils.EmailUtils;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -41,8 +48,11 @@ public class UserServiceImpl implements UserService {
 	@Autowired
 	private AppProps props;
 	
+	@Autowired
+	private EmailUtils emailUtils;
+	
 	@Override
-	public String LoginUser(LoginForm loginForm) {
+	public String loginUser(LoginForm loginForm) {
 		Map<String, String> messages = props.getMessages();
 		
 		User userEntity = userRepo.findByEmailAndPassword(loginForm.getEmail(), loginForm.getPassword());
@@ -95,7 +105,7 @@ public class UserServiceImpl implements UserService {
 			mapCity.put(city.getCityId(), city.getCityName());
 		});
 		
-		return null;
+		return mapCity;
 	}
 
 	@Override
@@ -117,8 +127,12 @@ public class UserServiceImpl implements UserService {
 		BeanUtils.copyProperties(userRegForm, userEntityObj);
 		User saveUserObj = userRepo.save(userEntityObj);
 		
+		String subject = "Registration successfully.";
+		String body = userRegEmailBody(userRegForm);
+		
 		if(saveUserObj.getUserId() != null) {
-			// TODO create logic for sending email for unlock account
+			emailUtils.sendEmail(userRegForm.getEmail(), subject, body);
+			return true;
 		}
 			
 		return false;
@@ -145,7 +159,9 @@ public class UserServiceImpl implements UserService {
 		User userObj = userRepo.findByEmail(email);
 		
 		if(userObj != null) {
-			// TODO for sending email to user
+			String subject = "Forgot Password.";
+			String body = forgotPwdEmailBody(userObj);
+			emailUtils.sendEmail(userObj.getEmail(), subject, body);
 			return messages.get(AppConstant.SUCCESS);
 		}
 		return messages.get(AppConstant.FAIL);
@@ -154,5 +170,70 @@ public class UserServiceImpl implements UserService {
 	private String generateTempPwd() {
 		String tempPassword = RandomStringUtils.randomAlphanumeric(6);
 		return tempPassword;
+	}
+	
+	private String userRegEmailBody(UserRegForm userRegForm) {
+		String fileName = "UNLOCK-ACC-BODY-TEMPLATE.txt";
+		StringBuffer sb = new StringBuffer();
+		
+		List<String> lines = new ArrayList<>();
+		
+		try (BufferedReader br = Files.newBufferedReader(Paths.get(fileName))) {
+			
+			lines = br.lines().collect(Collectors.toList());
+		}catch (IOException io) {
+			io.printStackTrace();
+		}
+		
+		lines.forEach(line ->{
+			if(line.contains("{FNAME}")) {
+				line = line.replace("{FNAME}", userRegForm.getFirstName());
+			}
+			if(line.contains("{LNAME}")){
+				line = line.replace("{LNAME}", userRegForm.getLastName());
+			}
+			if(line.contains("{EMAIL}")){
+				line = line.replace("{EMAIL}", userRegForm.getEmail());
+			}
+			if(line.contains("{TEMP-PWD}")){
+				line = line.replace("{TEMP-PWD}", userRegForm.getPassword());
+			}
+			
+			sb.append(line);
+		});
+			
+		
+		return sb.toString();
+	}
+	
+	private String forgotPwdEmailBody(User user) {
+		String fileName = "FORGOT-PASSWORD-BODY-TEMPLATE.txt";
+		StringBuffer sb = new StringBuffer();
+		
+		List<String> lines = new ArrayList<>();
+		
+		try (BufferedReader br = Files.newBufferedReader(Paths.get(fileName))) {
+			
+			lines = br.lines().collect(Collectors.toList());
+		}catch (IOException io) {
+			io.printStackTrace();
+		}
+		
+		lines.forEach(line ->{
+			if(line.contains("{FNAME}")) {
+				line = line.replace("{FNAME}", user.getFirstName());
+			}
+			if(line.contains("{LNAME}")){
+				line = line.replace("{LNAME}", user.getLastName());
+			}
+			if(line.contains("{PWD}")){
+				line = line.replace("{PWD}", user.getPassword());
+			}
+			
+			sb.append(line);
+		});
+			
+		
+		return sb.toString();
 	}
 }

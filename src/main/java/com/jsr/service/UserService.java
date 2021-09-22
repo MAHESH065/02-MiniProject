@@ -9,7 +9,7 @@ import com.jsr.binding.UserRegForm;
 public interface UserService {
 	
 	//For Login Functionality
-	public String LoginUser(LoginForm loginForm);
+	public String loginUser(LoginForm loginForm);
 	
 	//For User Registration Functionality
 	public Map<Integer, String> findCountries();
